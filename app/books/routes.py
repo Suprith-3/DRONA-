@@ -49,7 +49,7 @@ def list_book():
                 unique_name = f"book_{uuid.uuid4().hex}_{secure_filename(file.filename)}"
                 # Try Supabase first
                 if current_app.config.get('SUPABASE_URL'):
-                    supa_url = upload_file_to_supabase('dronacharya', file, f"books/{unique_name}")
+                    supa_url = upload_file_to_supabase(current_app.config.get('SUPABASE_BUCKET', 'dronacharya'), file, f"books/{unique_name}")
                     if supa_url:
                         filename = supa_url
                     else:
@@ -151,7 +151,7 @@ def delete_book(id):
             if book.cover_image.startswith('http'):
                 from modules.supabase_helper import delete_file_from_supabase
                 path_part = book.cover_image.split('/books/')[-1]
-                delete_file_from_supabase('dronacharya', f"books/{path_part}")
+                delete_file_from_supabase(current_app.config.get('SUPABASE_BUCKET', 'dronacharya'), f"books/{path_part}")
             else:
                 local_path = os.path.join(current_app.config['UPLOAD_FOLDER'], book.cover_image)
                 if os.path.exists(local_path):

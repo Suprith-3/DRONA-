@@ -72,7 +72,16 @@ def upload_file_to_supabase(bucket: str, file_obj, remote_path: str):
 
     except Exception as e:
         import traceback
-        print(f"DEBUG: Supabase upload failed: {str(e)}")
+        err_msg = str(e)
+        print(f"DEBUG: Supabase upload failed: {err_msg}")
+        
+        if "Bucket not found" in err_msg:
+            print("\n" + "!"*60)
+            print(f"CRITICAL STORAGE ERROR: BUCKET '{bucket}' NOT FOUND!")
+            print("Please ensure you have created this bucket in your Supabase Dashboard:")
+            print("Storage -> New Bucket -> Name it exactly the same as in your .env or config.")
+            print("!"*60 + "\n")
+            
         traceback.print_exc()
         # Reset pointer one last time for safety
         file_obj.seek(0)

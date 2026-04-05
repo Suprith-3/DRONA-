@@ -211,7 +211,7 @@ def get_answer():
     audio_url = url_for('static', filename='audio/'+filename)
     if current_app.config.get('SUPABASE_URL'):
         with open(filepath, 'rb') as f:
-            supa_url = upload_file_to_supabase('dronacharya', f, f"audio/{filename}")
+            supa_url = upload_file_to_supabase(current_app.config.get('SUPABASE_BUCKET', 'dronacharya'), f, f"audio/{filename}")
             if supa_url: audio_url = supa_url
 
     # Search videos
@@ -231,7 +231,7 @@ def api_generate_notes():
     download_url = url_for('static', filename='documents/'+filename)
     if current_app.config.get('SUPABASE_URL'):
         with open(filepath, 'rb') as f:
-            supa_url = upload_file_to_supabase('dronacharya', f, f"notes/{filename}")
+            supa_url = upload_file_to_supabase(current_app.config.get('SUPABASE_BUCKET', 'dronacharya'), f, f"notes/{filename}")
             if supa_url: download_url = supa_url
 
     return jsonify({'success': True, 'download_url': download_url})
@@ -249,7 +249,7 @@ def profile():
                 filename = secure_filename(f"avatar_{current_user.id}_{file.filename}")
                 # Try Supabase first
                 if current_app.config.get('SUPABASE_URL'):
-                    supa_url = upload_file_to_supabase('dronacharya', file, f"avatars/{filename}")
+                    supa_url = upload_file_to_supabase(current_app.config.get('SUPABASE_BUCKET', 'dronacharya'), file, f"avatars/{filename}")
                     if supa_url:
                         current_user.profile_pic = supa_url
                     else:

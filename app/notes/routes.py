@@ -56,7 +56,7 @@ def upload():
             final_path = unique_filename
             # Try Supabase first
             if current_app.config.get('SUPABASE_URL'):
-                supa_url = upload_file_to_supabase('dronacharya', file, f"notes/{unique_filename}")
+                supa_url = upload_file_to_supabase(current_app.config.get('SUPABASE_BUCKET', 'dronacharya'), file, f"notes/{unique_filename}")
                 if supa_url:
                     final_path = supa_url
                 else:
@@ -158,7 +158,7 @@ def delete_note(note_id):
             # Supabase URLs look like: https://.../storage/v1/object/public/bucket/notes/unique_filename
             from modules.supabase_helper import delete_file_from_supabase
             path_part = note.file_path.split('/notes/')[-1]
-            delete_file_from_supabase('dronacharya', f"notes/{path_part}")
+            delete_file_from_supabase(current_app.config.get('SUPABASE_BUCKET', 'dronacharya'), f"notes/{path_part}")
         else:
             # Local file
             local_path = os.path.join(current_app.config['NOTES_FOLDER'], note.file_path)

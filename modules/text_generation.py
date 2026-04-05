@@ -5,8 +5,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
-model_id = 'gemini-1.5-flash' 
-fallback_models = ['gemini-1.5-pro', 'gemini-2.0-flash-exp', 'gemini-1.5-flash-8b']
+model_id = 'gemini-3.1-flash' 
+# Prioritizing the fastest models first for fallback to ensure high-speed API responses under load
+fallback_models = ['gemini-2.5-flash', 'gemini-1.5-flash-8b', 'gemini-3.1-pro', 'gemini-2.5-pro']
 
 def generate_with_fallback(prompt, sys_instr=None):
     import time
@@ -120,6 +121,7 @@ def generate_roadmap_tasks(subject, months):
     - No markdown formatting (no ```json).
     - Ensure exactly {days} entries.
     """
+    raw_text = ""
     try:
         raw_text = generate_with_fallback(prompt)
         # Final cleanup for raw text
@@ -130,29 +132,17 @@ def generate_roadmap_tasks(subject, months):
         return tasks
     except Exception as e:
         print(f"Roadmap AI Error: {e}")
-        return []
-    except Exception as e:
-        err_msg = str(e)
-        print(f"Gemini Quiz Error: {err_msg}")
-        # Always try fallback for ANY error that prevents generation
-        if True:
-            # Try fallbacks with a tiny delay
-            import time
-            for fb_model in fallback_models:
-                try:
-                    time.sleep(0.1) # Tiny pause to avoid spamming
-                    response = client.models.generate_content(model=fb_model, contents=system_instruction)
-                    text = response.text.strip()
-                    if '```json' in text: text = text.split('```json')[1].split('```')[0].strip()
-                    return json.loads(text)
-                except:
-                    continue
-
-            return [
-                {"question": f"Which of the following describes a core aspect of {topic}?", "options": {"A": "Option 1", "B": "Option 2", "C": "Correct Principle", "D": "None"}, "answer": "C"},
-                {"question": f"True or False: {topic} is widely used in modern education.", "options": {"A": "True", "B": "False", "C": "Maybe", "D": "Not sure"}, "answer": "A"}
-            ]
-        return []
+        import re
+        try:
+            if raw_text:
+                match = re.search(r'\[\s*\{.*\}\s*\]', raw_text, re.DOTALL)
+                if match:
+                    return json.loads(match.group(0))
+        except:
+            pass
+            
+        # Procedural fallback to ensure data is always returned and prevent 500 errors
+        return [{"day": i, "topic": f"{subject} - Part {i}", "description": f"Core concepts of {subject} for day {i}."} for i in range(1, days + 1)]
 
 def generate_gemini_chat(message, history):
     system_instruction = (
@@ -366,21 +356,13 @@ def generate_gemini_citation(source, style):
 
 def generate_gemini_notes(topic):
     try:
-        response = client.models.generate_content(model=model_id, contents=f"Generate study notes for: {topic}")
-        if response.text:
-            return response.text
-        return f"# Study Notes: {topic}\n(Empty response from AI)"
+        content = generate_with_fallback(f"Generate thorough study notes in markdown for: {topic}")
+        if content:
+            return content
+        return f"# Study Notes: {topic}\n(AI failed to generate content)"
     except Exception as e:
         err_msg = str(e)
         print(f"Gemini Notes Error: {err_msg}")
-        if True:
-            for fb_model in fallback_models:
-                try:
-                    fb_response = client.models.generate_content(model=fb_model, contents=f"Generate study notes for: {topic}")
-                    if fb_response.text:
-                        return fb_response.text
-                except:
-                    continue
         return f"# Study Notes: {topic}\n(Error: {err_msg})"
 
 def generate_chess_move(fen):
@@ -626,6 +608,13 @@ def generate_specific_course(topic):
                 return json.loads(text)
             except:
                 continue
+
+        # Absolute procedural fallback
+        return {
+            "title": f"Mastery of {topic}",
+            "description": f"An intensive exploration into {topic} with practical examples and deep dives.",
+            "level": "Intermediate"
+        }
 
 def classify_document_type(file_path):
     """

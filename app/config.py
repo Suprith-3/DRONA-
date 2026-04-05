@@ -22,6 +22,7 @@ class Config:
     # Supabase settings for Storage
     SUPABASE_URL = os.getenv('SUPABASE_URL')
     SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+    SUPABASE_BUCKET = os.getenv('SUPABASE_BUCKET', 'dronacharya')
 
     # Folder/Bucket settings
     UPLOAD_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'static', 'uploads')
